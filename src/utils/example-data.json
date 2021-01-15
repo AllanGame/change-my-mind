@@ -1,0 +1,11 @@
+{
+    "token": {
+      "discord": "YOUR-BOT-TOKEN"
+    },
+    "database": {
+      "username": "MONGO-USER",
+      "password": "MONGO-PASSWORD",
+      "url": "CLUSTER-URL"
+    },
+    "example?": "delete this, this is an example of data.json remove 'example-' from the name"
+  }

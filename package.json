@@ -1,0 +1,23 @@
+{
+  "name": "change-my-mind",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "cd src && node ."
+  },
+  "keywords": [
+    "discord",
+    "discord.js",
+    "discord bot",
+    "discord poll",
+    "polls",
+    "discord poll bot",
+    "change my mind"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^12.5.1"
+  }
+}
