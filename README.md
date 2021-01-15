@@ -16,7 +16,7 @@ change the name to "data.json" and put this
       "username": "MONGO-USER",
       "password": "MONGO-PASSWORD",
       "url": "CLUSTER-URL"
-    },
+    }
   }
 ```
 
