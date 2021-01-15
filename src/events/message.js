@@ -1,84 +1,151 @@
-module.exports = (client, message) => {
-  const Discord = require("discord.js");
-  let misc = require("../utils/misc.json");
+module.exports = (client, message) =>  {
+  const { Console } = require("console");
+  var Discord = require("discord.js");
+  var GuildSchema = require("../models/guild.js");
+  var UserSchema = require("../models/user.js");
+  let misc = require('../utils/misc.json')
+  let args = message.content.split(" ");
 
-  let prefix = "c!";
+  UserSchema.findOne({
+      userID: message.author.id
+  }, (err, user) => {
+      if(err) {
+          console.error(err);
+      }
 
-  if (message.content.match(new RegExp(`^<@!?${client.user.id}>( |)$`))) {
-    message.channel.send(`Prefix: c!`);
-  }
+      if(!user) {
+          const newUserSchema = new UserSchema({
+              userID: message.author.id,
+              lang: "lang_en",
+              blacklisted: false,
+              dev: false
+          });
+          return newUserSchema.save();
+      }
+      var lang = require(`../langs/${user.lang}.json`);
 
-  let errorEmbed = new Discord.MessageEmbed()
-    .setTitle("error")
-    .setAuthor(message.author.tag, message.author.displayAvatarURL())
-    .setDescription("error")
-    .setColor("RED")
-    .setFooter("error")
-    .setTimestamp();
+      var blacklistedEmbed = new Discord.MessageEmbed()
+          .setTitle(lang.embed.titleerror)
+          .setAuthor(message.author.tag, message.author.displayAvatarURL())
+          .setDescription(lang.embed.blacklisted)
+          .setColor("RED")
+          .setFooter(lang.embed.footer)
+          .setTimestamp();
 
-  if (!message.content.startsWith(prefix)) {
-    return;
-  }
+      if(message.channel.type == 'dm') return;
 
-  if (message.author.bot) {
-    return;
-  }
+      GuildSchema.findOne({
+          guildID: message.guild.id
+      }, (err, guild) => {
+          if(err) {
+              console.error(err);
+          }
 
-  const args = message.content.slice(prefix.length).trim().split(/ +/g);
-  const command = args.shift().toLowerCase();
+          
+          if(!guild) {
+              const newGuildSchema = new GuildSchema({
+                  guildID: message.guild.id,
+                  prefix: "c!"
+              });
+              return newGuildSchema.save();
+          }
 
-  var cmd =
-    client.commands.get(command) ||
-    client.commands.find((c) => c.alias && c.alias.includes(command));
+          var prefix = guild.prefix;
 
-  if (!cmd) {
-    return;
-  }
+          if(message.content.match(new RegExp(`^<@!?${client.user.id}>( |)$`))) {
+              message.channel.send(`Prefix: \`${prefix}\``);
+          }
 
-  if (!message.member.permissions.has(cmd.perms)) {
-    message.channel.send("no permss");
-    return;
-  }
+          var errorEmbed = new Discord.MessageEmbed()
+              .setTitle("error")
+              .setAuthor(message.author.tag, message.author.displayAvatarURL())
+              .setDescription("error")
+              .setColor("RED")
+              .setFooter("error")
+              .setTimestamp();
 
-  var storage = {
-    errorEmbed: errorEmbed,
-    Discord: Discord,
-  };
+          if(!message.content.startsWith(prefix)) {
+              return;
+          }
 
-  if (cmd.onlyowner) {
-    if (!misc.owners.id.includes(message.author.id)) {
-      message.channel.send(lang.command.onlydev);
-      return;
-    }
-  }
+          if(message.author.bot) {
+              return;
+          }
 
-  const cmdCooldown = Math.floor(cmd.cooldown * 1000);
-  const endCooldown = Math.floor(Date.now() + cmdCooldown);
+          const args = message.content.slice(prefix.length).trim().split(/ +/g);
+          const command = args.shift().toLowerCase();
 
-  if (!client.cooldowns.has(`${message.author.id}.${cmd.name}`)) {
-    client.cooldowns.set(`${message.author.id}.${cmd.name}`, 0);
-  }
+          var cmd = client.commands.get(command) || client.commands.find((c) => c.alias && c.alias.includes(command));
 
-  const userCooldown = client.cooldowns.get(`${message.author.id}.${cmd.name}`);
+          if(!cmd) {
+              return;
+          }
 
-  if (Date.now() < userCooldown) {
-    let restCooldown = userCooldown - Date.now();
-    let seconds = Math.floor(restCooldown / 1000);
-    let cooldownMessage = "{cooldown}";
-    message.channel.send(cooldownMessage).then((msg) => {
-      msg.delete({ timeout: restCooldown });
-    });
-    return;
-  } else {
-    try {
-      cmd.run(client, message, args, storage);
-      client.cooldowns.set(`${message.author.id}.${cmd.name}`, endCooldown);
-    } catch (err) {
-      message.channel.send(errorEmbed);
-      console.error(err);
-      client.channels
-        .resolve("746467458491351101")
-        .send(`ERROR! check the console.\n` + "```js\n" + err + "```");
-    }
-  }
+          if(user.blacklisted) {
+              message.channel.send(blacklistedEmbed).then((msg) => {
+                  msg.delete({ timeout: 10000 });
+                  return;
+              });
+              return;
+          }
+
+
+          if(cmd.onlyowner) {
+              if(!misc.owners.id.includes(message.author.id)) {
+                  message.channel.send(lang.command.onlydev);
+                  return;
+              }
+          }
+
+          if(cmd.onlydev) {
+              if(!user.dev) {
+                  message.channel.send(lang.command.onlydev);
+                  return;
+              }
+          }
+          if(!message.member.permissions.has(cmd.perms)) {
+              message.channel.send("no permss");
+              return;
+          }
+
+          var storage = {
+              guild: guild,
+              user: user,
+              lang: lang,
+              errorEmbed: errorEmbed,
+              GuildSchema: GuildSchema,
+              UserSchema: UserSchema,
+              Discord: Discord
+          };
+
+          const cmdCooldown = Math.floor(cmd.cooldown * 1000);
+          const endCooldown = Math.floor(Date.now() + cmdCooldown);
+
+          if(!client.cooldowns.has(`${message.author.id}.${cmd.name}`)) {
+              client.cooldowns.set(`${message.author.id}.${cmd.name}`, 0);
+          }
+
+          const userCooldown = client.cooldowns.get(`${message.author.id}.${cmd.name}`);
+
+          if(Date.now() < userCooldown) {
+              let restCooldown = userCooldown - Date.now();
+              let seconds = Math.floor(restCooldown / 1000);
+              let cooldownMessage = lang.command.cooldown.replace("{command}", cmd.name).replace("{seconds}", seconds);
+              message.channel.send(cooldownMessage).then((msg) => {
+                  msg.delete({timeout: restCooldown});
+              });
+              return;
+          }
+          else {
+              try {
+                  cmd.run(client, message, args, storage);
+                  client.cooldowns.set(`${message.author.id}.${cmd.name}`, endCooldown);
+              } catch(err) {
+                  message.channel.send(errorEmbed);
+                  console.error(err);
+                  client.channels.resolve("786103108182212631").send(`ERROR\n` + "```js\n" + err + "```");
+              }
+          }
+      });
+  });
 };

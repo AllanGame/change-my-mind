@@ -1,5 +1,6 @@
 const Discord = require('discord.js');
 const client = new Discord.Client();
+const mongoose = require("mongoose");
 const data = require("./utils/data.json");
 let fs = require("fs");
 
@@ -42,6 +43,22 @@ for(const file of fs.readdirSync("./events")) {
         delete require.cache[require.resolve(`./events/${file}`)];
     }
 }
+
+let uri = `mongodb+srv://${data.database.username}:${data.database.password}@${data.database.url}/pollbot?retryWrites=true&w=majority`;
+
+
+mongoose.connect(uri, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    useFindAndModify: false
+}, function(err) {
+    if(err) {
+        console.error(`[ERROR] An error occurred connecting to the database.\n${err}`);
+        process.exit(1);
+        return;
+    }
+    console.log(`[INFO] Connected to ${data.database.url} (MongoDB)`);
+});
 
 
 client.login(data.token.discord).then(() => {
