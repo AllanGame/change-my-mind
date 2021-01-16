@@ -7,8 +7,21 @@ let fs = require("fs");
 client.commands = new Discord.Collection();
 client.cooldowns = new Discord.Collection();
 
-client.on("messageReactionAdd", async (reaction, user) => {
+client.on("messageReactionAdd", async (reaction, user, message) => {
 
+    const PollSchema = require("./models/poll");
+    PollSchema.findOne({
+        userID: reaction.message.author.id,
+        guildID: reaction.message.guild.id,
+        messageID: reaction.message.id
+    }, (err, poll) => {
+        
+        if(err) {
+            console.error(err);
+        }
+
+        console.log(poll)
+    })
   
 });
 
