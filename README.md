@@ -22,4 +22,4 @@ change the name to "data.json" and put this
 
 ### Galery 
 ![Not finished](https://media.discordapp.net/attachments/698332182011183162/799743953259462666/unknown.png?width=379&height=234)
-This is a concept and, sorry [Pabszito](https://github.com/Pabszito)
+This is a concept and, sorry [@Pabszito](https://github.com/Pabszito)
